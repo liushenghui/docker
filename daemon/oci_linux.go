@@ -23,7 +23,7 @@ import (
 	"github.com/opencontainers/runc/libcontainer/apparmor"
 	"github.com/opencontainers/runc/libcontainer/devices"
 	"github.com/opencontainers/runc/libcontainer/user"
-	"github.com/opencontainers/specs/specs-go"
+	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 func setResources(s *specs.Spec, r containertypes.Resources) error {
@@ -481,7 +481,7 @@ func setMounts(daemon *Daemon, s *specs.Spec, c *container.Container, mounts []c
 
 		if m.Source == "tmpfs" {
 			data := c.HostConfig.Tmpfs[m.Destination]
-			options := []string{"noexec", "nosuid", "nodev", volume.DefaultPropagationMode}
+			options := []string{"noexec", "nosuid", "nodev", string(volume.DefaultPropagationMode)}
 			if data != "" {
 				options = append(options, strings.Split(data, ",")...)
 			}

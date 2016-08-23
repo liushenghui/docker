@@ -226,7 +226,7 @@ List containers
         sizes
 -   **filters** - a JSON encoded value of the filters (a `map[string][]string`) to process on the containers list. Available filters:
   -   `exited=<int>`; -- containers with exit code of  `<int>` ;
-  -   `status=`(`created`|`restarting`|`running`|`paused`|`exited`|`dead`)
+  -   `status=`(`created`|`restarting`|`running`|`removing`|`paused`|`exited`|`dead`)
   -   `label=key` or `label="key=value"` of a container label
   -   `isolation=`(`default`|`process`|`hyperv`)   (Windows daemon only)
   -   `ancestor`=(`<image-name>[:<tag>]`,  `<image id>` or `<image@digest>`)
@@ -372,7 +372,7 @@ Create a container
 -   **AttachStdout** - Boolean value, attaches to `stdout`.
 -   **AttachStderr** - Boolean value, attaches to `stderr`.
 -   **Tty** - Boolean value, Attach standard streams to a `tty`, including `stdin` if it is not closed.
--   **OpenStdin** - Boolean value, opens stdin,
+-   **OpenStdin** - Boolean value, opens `stdin`,
 -   **StdinOnce** - Boolean value, close `stdin` after the 1 attached client disconnects.
 -   **Env** - A list of environment variables in the form of `["VAR=value"[,"VAR2=value2"]]`
 -   **Labels** - Adds a map of labels to a container. To specify a map: `{"key":"value"[,"key2":"value2"]}`
@@ -460,7 +460,7 @@ Create a container
             An ever increasing delay (double the previous delay, starting at 100mS)
             is added before each restart to prevent flooding the server.
     -   **AutoRemove** - Boolean value, set to `true` to automatically remove the container on daemon side
-            when the container's process exits.
+            when the container's process exits. Note that `RestartPolicy` other than `none` is exclusive to `AutoRemove`.
     -   **UsernsMode**  - Sets the usernamespace mode for the container when usernamespace remapping option is enabled.
            supported values are: `host`.
     -   **NetworkMode** - Sets the networking mode for the container. Supported
@@ -516,7 +516,7 @@ Return low-level information on the container `id`
     HTTP/1.1 200 OK
     Content-Type: application/json
 
-    {
+	{
 		"AppArmorProfile": "",
 		"Args": [
 			"-c",
@@ -1669,14 +1669,18 @@ or being killed.
 
 **Query parameters**:
 
--   **dockerfile** - Path within the build context to the Dockerfile. This is
-        ignored if `remote` is specified and points to an individual filename.
+-   **dockerfile** - Path within the build context to the `Dockerfile`. This is
+        ignored if `remote` is specified and points to an external `Dockerfile`.
 -   **t** – A name and optional tag to apply to the image in the `name:tag` format.
         If you omit the `tag` the default `latest` value is assumed.
         You can provide one or more `t` parameters.
--   **remote** – A Git repository URI or HTTP/HTTPS URI build source. If the
-        URI specifies a filename, the file's contents are placed into a file
-        called `Dockerfile`.
+-   **remote** – A Git repository URI or HTTP/HTTPS context URI. If the
+        URI points to a single text file, the file's contents are placed into
+        a file called `Dockerfile` and the image is built from that file. If
+        the URI points to a tarball, the file is downloaded by the daemon and
+        the contents therein used as the context for the build. If the URI
+        points to a tarball and the `dockerfile` parameter is also specified,
+        there must be a file with the corresponding path inside the tarball.
 -   **q** – Suppress verbose build output.
 -   **nocache** – Do not use the cache when building the image.
 -   **pull** - Attempt to pull the image even if an older image exists locally.
@@ -1696,7 +1700,7 @@ or being killed.
 -   **shmsize** - Size of `/dev/shm` in bytes. The size must be greater than 0.  If omitted the system uses 64MB.
 -   **labels** – JSON map of string pairs for labels to set on the image.
 
-    Request Headers:
+**Request Headers**:
 
 -   **Content-type** – Set to `"application/tar"`.
 -   **X-Registry-Config** – A base64-url-safe-encoded Registry Auth Config JSON
@@ -1764,7 +1768,7 @@ a base64-encoded AuthConfig object.
         an image.
 -   **tag** – Tag or digest.
 
-    Request Headers:
+**Request Headers**:
 
 -   **X-Registry-Auth** – base64-encoded AuthConfig object, containing either login information, or a token
     - Credential based login:
@@ -1999,7 +2003,7 @@ The push is cancelled if the HTTP connection is closed.
 
 -   **tag** – The tag to associate with the image on the registry. This is optional.
 
-Request Headers:
+**Request Headers**:
 
 -   **X-Registry-Auth** – base64-encoded AuthConfig object, containing either login information, or a token
     - Credential based login:
@@ -2402,7 +2406,7 @@ Create a new image from a container's changes
 
 `GET /events`
 
-Get container events from docker, either in real time via streaming.
+Get container events from docker, in real time via streaming.
 
 Docker containers report the following events:
 
@@ -2432,7 +2436,7 @@ Docker daemon report the following event:
 
     HTTP/1.1 200 OK
     Content-Type: application/json
-    Server: Docker/1.10.0 (linux)
+    Server: Docker/1.11.0 (linux)
     Date: Fri, 29 Apr 2016 15:18:06 GMT
     Transfer-Encoding: chunked
 
@@ -2692,14 +2696,14 @@ See the [image tarball format](#image-tarball-format) for more details.
 **Example response**:
 
 If the "quiet" query parameter is set to `true` / `1` (`?quiet=1`), progress 
-details are suppressed, and only a confirmation message is returned as plain text
-once the action completes.
+details are suppressed, and only a confirmation message is returned once the
+action completes.
 
     HTTP/1.1 200 OK
-    Content-Length: 29
-    Content-Type: text/plain; charset=utf-8
+    Content-Type: application/json
+    Transfer-Encoding: chunked
 
-    Loaded image: busybox:latest
+    {"stream":"Loaded image: busybox:latest\n"}
 
 **Query parameters**:
 
@@ -2865,25 +2869,25 @@ Return low-level information about the `exec` command `id`.
     Content-Type: application/json
 
     {
-        "CanRemove": false,
-        "ContainerID": "b53ee82b53a40c7dca428523e34f741f3abc51d9f297a14ff874bf761b995126",
-        "DetachKeys": "",
-        "ExitCode": 2,
-        "ID": "f33bbfb39f5b142420f4759b2348913bd4a8d1a6d7fd56499cb41a1bb91d7b3b",
-        "OpenStderr": true,
-        "OpenStdin": true,
-        "OpenStdout": true,
-        "ProcessConfig": {
-            "arguments": [
-                "-c",
-                "exit 2"
-            ],
-            "entrypoint": "sh",
-            "privileged": false,
-            "tty": true,
-            "user": "1000"
-        },
-        "Running": false
+      "CanRemove": false,
+      "ContainerID": "b53ee82b53a40c7dca428523e34f741f3abc51d9f297a14ff874bf761b995126",
+      "DetachKeys": "",
+      "ExitCode": 2,
+      "ID": "f33bbfb39f5b142420f4759b2348913bd4a8d1a6d7fd56499cb41a1bb91d7b3b",
+      "OpenStderr": true,
+      "OpenStdin": true,
+      "OpenStdout": true,
+      "ProcessConfig": {
+        "arguments": [
+          "-c",
+          "exit 2"
+        ],
+        "entrypoint": "sh",
+        "privileged": false,
+        "tty": true,
+        "user": "1000"
+      },
+      "Running": false
     }
 
 **Status codes**:
@@ -2952,6 +2956,7 @@ Create a volume
         "com.example.some-label": "some-value",
         "com.example.some-other-label": "some-other-value"
       },
+      "Driver": "custom"
     }
 
 **Example response**:
@@ -3007,17 +3012,17 @@ Return low-level information on the volume `name`
     Content-Type: application/json
 
     {
-        "Name": "tardis",
-        "Driver": "custom",
-        "Status": {
-          "hello": "world"
-        },
-        "Mountpoint": "/var/lib/docker/volumes/tardis/_data",
-        "Labels": {
-            "com.example.some-label": "some-value",
-            "com.example.some-other-label": "some-other-value"
-        },
-        "Scope": "local"
+      "Name": "tardis",
+      "Driver": "custom",
+      "Mountpoint": "/var/lib/docker/volumes/tardis/_data",
+      "Status": {
+        "hello": "world"
+      },
+      "Labels": {
+          "com.example.some-label": "some-value",
+          "com.example.some-other-label": "some-other-value"
+      },
+      "Scope": "local"
     }
 
 **Status codes**:
@@ -3056,6 +3061,11 @@ Instruct the driver to remove the volume (`name`).
 **Example response**:
 
     HTTP/1.1 204 No Content
+
+**Query Parameters**:
+
+-   **force** - 1/True/true or 0/False/false, Force the removal of the volume.
+        Default `false`.
 
 **Status codes**:
 
@@ -3239,18 +3249,18 @@ Content-Type: application/json
   "EnableIPv6": true,
   "IPAM":{
     "Config":[
-       {
-          "Subnet":"172.20.0.0/16",
-          "IPRange":"172.20.10.0/24",
-          "Gateway":"172.20.10.11"
-        },
-        {
-          "Subnet":"2001:db8:abcd::/64",
-          "Gateway":"2001:db8:abcd::1011"
-        }
+      {
+        "Subnet":"172.20.0.0/16",
+        "IPRange":"172.20.10.0/24",
+        "Gateway":"172.20.10.11"
+      },
+      {
+        "Subnet":"2001:db8:abcd::/64",
+        "Gateway":"2001:db8:abcd::1011"
+      }
     ],
     "Options": {
-        "foo": "bar"
+      "foo": "bar"
     }
   },
   "Internal":true,
@@ -4109,6 +4119,54 @@ JSON Parameters:
 
 ## 3.8 Swarm
 
+### Inspect swarm
+
+
+`GET /swarm`
+
+Inspect swarm
+
+**Example response**:
+
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+
+    {
+      "CreatedAt" : "2016-08-15T16:00:20.349727406Z",
+      "Spec" : {
+        "Dispatcher" : {
+          "HeartbeatPeriod" : 5000000000
+        },
+        "Orchestration" : {
+         "TaskHistoryRetentionLimit" : 10
+        },
+        "CAConfig" : {
+          "NodeCertExpiry" : 7776000000000000
+        },
+        "Raft" : {
+          "LogEntriesForSlowFollowers" : 500,
+          "HeartbeatTick" : 1,
+          "SnapshotInterval" : 10000,
+          "ElectionTick" : 3
+        },
+        "TaskDefaults" : {},
+        "Name" : "default"
+      },
+     "JoinTokens" : {
+        "Worker" : "SWMTKN-1-1h8aps2yszaiqmz2l3oc5392pgk8e49qhx2aj3nyv0ui0hez2a-6qmn92w6bu3jdvnglku58u11a",
+        "Manager" : "SWMTKN-1-1h8aps2yszaiqmz2l3oc5392pgk8e49qhx2aj3nyv0ui0hez2a-8llk83c4wm9lwioey2s316r9l"
+     },
+     "ID" : "70ilmkj2f6sp2137c753w2nmt",
+     "UpdatedAt" : "2016-08-15T16:32:09.623207604Z",
+     "Version" : {
+       "Index" : 51
+    }
+  }
+
+**Status codes**:
+
+- **200** - no error
+
 ### Initialize a new swarm
 
 
@@ -4239,6 +4297,10 @@ Leave a swarm
     HTTP/1.1 200 OK
     Content-Length: 0
     Content-Type: text/plain; charset=utf-8
+
+**Query parameters**:
+
+- **force** - Boolean (0/1, false/true). Force leave swarm, even if this is the last manager or that it will break the cluster.
 
 **Status codes**:
 
@@ -4425,10 +4487,12 @@ List services
 
 ### Create a service
 
-
 `POST /services/create`
 
-Create a service
+Create a service. When using this endpoint to create a service using a private
+repository from the registry, the `X-Registry-Auth` header must be used to
+include a base64-encoded AuthConfig object. Refer to the [create an
+image](#create-an-image) section for more details.
 
 **Example request**:
 
@@ -4508,7 +4572,7 @@ Create a service
     Content-Type: application/json
 
     {
-      "Id":"ak7w3gjqoa3kuz8xcpnyy0pvl"
+      "ID":"ak7w3gjqoa3kuz8xcpnyy0pvl"
     }
 
 **Status codes**:
@@ -4517,12 +4581,10 @@ Create a service
 - **406** – server error or node is not part of a swarm
 - **409** – name conflicts with an existing object
 
-JSON Parameters:
+**JSON Parameters**:
 
-- **Annotations** – Optional medata to associate with the service.
-    - **Name** – User-defined name for the service.
-    - **Labels** – A map of labels to associate with the service (e.g.,
-      `{"key":"value"[,"key2":"value2"]}`).
+- **Name** – User-defined name for the service.
+- **Labels** – A map of labels to associate with the service (e.g., `{"key":"value"[,"key2":"value2"]}`).
 - **TaskTemplate** – Specification of the tasks to start as part of the new service.
     - **ContainerSpec** - Container settings for containers started as part of this task.
         - **Image** – A string specifying the image name to use for the container.
@@ -4588,6 +4650,14 @@ JSON Parameters:
           of: `"Ports": { "<port>/<tcp|udp>: {}" }`
     - **VirtualIPs**
 
+**Request Headers**:
+
+- **Content-type** – Set to `"application/json"`.
+- **X-Registry-Auth** – base64-encoded AuthConfig object, containing either
+  login information, or a token. Refer to the [create an image](#create-an-image)
+  section for more details.
+
+
 ### Remove a service
 
 
@@ -4601,11 +4671,11 @@ Stop and remove the service `id`
 
 **Example response**:
 
-    HTTP/1.1 204 No Content
+    HTTP/1.1 200 No Content
 
 **Status codes**:
 
--   **204** – no error
+-   **200** – no error
 -   **404** – no such service
 -   **500** – server error
 
@@ -4689,14 +4759,18 @@ Return information on the service `id`.
 
 ### Update a service
 
-
 `POST /services/(id or name)/update`
 
-Update the service `id`.
+Update a service. When using this endpoint to create a service using a
+private repository from the registry, the `X-Registry-Auth` header can be used
+to update the authentication information for that is stored for the service.
+The header contains a base64-encoded AuthConfig object. Refer to the [create an
+image](#create-an-image) section for more details.
 
 **Example request**:
 
-    POST /services/1cb4dnqcyx6m66g2t538x3rxha/update HTTP/1.1
+    POST /services/1cb4dnqcyx6m66g2t538x3rxha/update?version=23 HTTP/1.1
+    Content-Type: application/json
 
     {
       "Name": "top",
@@ -4732,16 +4806,14 @@ Update the service `id`.
 
 **Example response**:
 
-      HTTP/1.1 200 OK
-      Content-Length: 0
-      Content-Type: text/plain; charset=utf-8
+    HTTP/1.1 200 OK
+    Content-Length: 0
+    Content-Type: text/plain; charset=utf-8
 
 **JSON Parameters**:
 
-- **Annotations** – Optional medata to associate with the service.
-    - **Name** – User-defined name for the service.
-    - **Labels** – A map of labels to associate with the service (e.g.,
-      `{"key":"value"[,"key2":"value2"]}`).
+- **Name** – User-defined name for the service.
+- **Labels** – A map of labels to associate with the service (e.g., `{"key":"value"[,"key2":"value2"]}`).
 - **TaskTemplate** – Specification of the tasks to start as part of the new service.
     - **ContainerSpec** - Container settings for containers started as part of this task.
         - **Image** – A string specifying the image name to use for the container.
@@ -4804,6 +4876,13 @@ Update the service `id`.
 
 - **version** – The version number of the service object being updated. This is
   required to avoid conflicting writes.
+
+**Request Headers**:
+
+- **Content-type** – Set to `"application/json"`.
+- **X-Registry-Auth** – base64-encoded AuthConfig object, containing either
+  login information, or a token. Refer to the [create an image](#create-an-image)
+  section for more details.
 
 **Status codes**:
 

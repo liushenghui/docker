@@ -344,3 +344,68 @@ func (s *DockerSuite) TestVolumeCliCreateLabelMultiple(c *check.C) {
 		c.Assert(strings.TrimSpace(out), check.Equals, v)
 	}
 }
+
+func (s *DockerSuite) TestVolumeCliLsFilterLabels(c *check.C) {
+	testVol1 := "testvolcreatelabel-1"
+	out, _, err := dockerCmdWithError("volume", "create", "--label", "foo=bar1", "--name", testVol1)
+	c.Assert(err, check.IsNil)
+
+	testVol2 := "testvolcreatelabel-2"
+	out, _, err = dockerCmdWithError("volume", "create", "--label", "foo=bar2", "--name", testVol2)
+	c.Assert(err, check.IsNil)
+
+	out, _ = dockerCmd(c, "volume", "ls", "--filter", "label=foo")
+
+	// filter with label=key
+	c.Assert(out, checker.Contains, "testvolcreatelabel-1\n", check.Commentf("expected volume 'testvolcreatelabel-1' in output"))
+	c.Assert(out, checker.Contains, "testvolcreatelabel-2\n", check.Commentf("expected volume 'testvolcreatelabel-2' in output"))
+
+	out, _ = dockerCmd(c, "volume", "ls", "--filter", "label=foo=bar1")
+
+	// filter with label=key=value
+	c.Assert(out, checker.Contains, "testvolcreatelabel-1\n", check.Commentf("expected volume 'testvolcreatelabel-1' in output"))
+	c.Assert(out, check.Not(checker.Contains), "testvolcreatelabel-2\n", check.Commentf("expected volume 'testvolcreatelabel-2 in output"))
+
+	out, _ = dockerCmd(c, "volume", "ls", "--filter", "label=non-exist")
+	outArr := strings.Split(strings.TrimSpace(out), "\n")
+	c.Assert(len(outArr), check.Equals, 1, check.Commentf("\n%s", out))
+
+	out, _ = dockerCmd(c, "volume", "ls", "--filter", "label=foo=non-exist")
+	outArr = strings.Split(strings.TrimSpace(out), "\n")
+	c.Assert(len(outArr), check.Equals, 1, check.Commentf("\n%s", out))
+}
+
+func (s *DockerSuite) TestVolumeCliRmForceUsage(c *check.C) {
+	out, _ := dockerCmd(c, "volume", "create")
+	id := strings.TrimSpace(out)
+
+	dockerCmd(c, "volume", "rm", "-f", id)
+	dockerCmd(c, "volume", "rm", "--force", "nonexist")
+
+	out, _ = dockerCmd(c, "volume", "ls")
+	outArr := strings.Split(strings.TrimSpace(out), "\n")
+	c.Assert(len(outArr), check.Equals, 1, check.Commentf("%s\n", out))
+}
+
+func (s *DockerSuite) TestVolumeCliRmForce(c *check.C) {
+	testRequires(c, SameHostDaemon, DaemonIsLinux)
+
+	name := "test"
+	out, _ := dockerCmd(c, "volume", "create", "--name", name)
+	id := strings.TrimSpace(out)
+	c.Assert(id, checker.Equals, name)
+
+	out, _ = dockerCmd(c, "volume", "inspect", "--format", "{{.Mountpoint}}", name)
+	c.Assert(strings.TrimSpace(out), checker.Not(checker.Equals), "")
+	// Mountpoint is in the form of "/var/lib/docker/volumes/.../_data", removing `/_data`
+	path := strings.TrimSuffix(strings.TrimSpace(out), "/_data")
+	out, _, err := runCommandWithOutput(exec.Command("rm", "-rf", path))
+	c.Assert(err, check.IsNil)
+
+	dockerCmd(c, "volume", "rm", "-f", "test")
+	out, _ = dockerCmd(c, "volume", "ls")
+	c.Assert(out, checker.Not(checker.Contains), name)
+	dockerCmd(c, "volume", "create", "--name", "test")
+	out, _ = dockerCmd(c, "volume", "ls")
+	c.Assert(out, checker.Contains, name)
+}

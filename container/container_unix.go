@@ -129,7 +129,7 @@ func (container *Container) NetworkMounts() []Mount {
 				Source:      container.ResolvConfPath,
 				Destination: "/etc/resolv.conf",
 				Writable:    writable,
-				Propagation: volume.DefaultPropagationMode,
+				Propagation: string(volume.DefaultPropagationMode),
 			})
 		}
 	}
@@ -148,7 +148,7 @@ func (container *Container) NetworkMounts() []Mount {
 				Source:      container.HostnamePath,
 				Destination: "/etc/hostname",
 				Writable:    writable,
-				Propagation: volume.DefaultPropagationMode,
+				Propagation: string(volume.DefaultPropagationMode),
 			})
 		}
 	}
@@ -167,7 +167,7 @@ func (container *Container) NetworkMounts() []Mount {
 				Source:      container.HostsPath,
 				Destination: "/etc/hosts",
 				Writable:    writable,
-				Propagation: volume.DefaultPropagationMode,
+				Propagation: string(volume.DefaultPropagationMode),
 			})
 		}
 	}
@@ -249,7 +249,7 @@ func (container *Container) IpcMounts() []Mount {
 			Source:      container.ShmPath,
 			Destination: "/dev/shm",
 			Writable:    true,
-			Propagation: volume.DefaultPropagationMode,
+			Propagation: string(volume.DefaultPropagationMode),
 		})
 	}
 
@@ -302,6 +302,9 @@ func (container *Container) UpdateContainer(hostConfig *containertypes.HostConfi
 
 	// update HostConfig of container
 	if hostConfig.RestartPolicy.Name != "" {
+		if container.HostConfig.AutoRemove && !hostConfig.RestartPolicy.IsNone() {
+			return fmt.Errorf("Restart policy cannot be updated because AutoRemove is enabled for the container")
+		}
 		container.HostConfig.RestartPolicy = hostConfig.RestartPolicy
 	}
 

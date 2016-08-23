@@ -43,17 +43,17 @@ esac
 
 # the following lines are in sorted order, FYI
 clone git github.com/Azure/go-ansiterm 388960b655244e76e24c75f48631564eaefade62
-clone git github.com/Microsoft/hcsshim v0.3.6
+clone git github.com/Microsoft/hcsshim v0.4.2
 clone git github.com/Microsoft/go-winio v0.3.4
 clone git github.com/Sirupsen/logrus v0.10.0 # logrus is a common dependency among multiple deps
 clone git github.com/docker/libtrust 9cbd2a1374f46905c68a4eb3694a130610adc62a
-clone git github.com/go-check/check 03a4d9dcf2f92eae8e90ed42aa2656f63fdd0b14 https://github.com/cpuguy83/check.git
+clone git github.com/go-check/check 4ed411733c5785b40214c70bce814c3a3a689609 https://github.com/cpuguy83/check.git
 clone git github.com/gorilla/context v1.1
 clone git github.com/gorilla/mux v1.1
 clone git github.com/kr/pty 5cf931ef8f
 clone git github.com/mattn/go-shellwords v1.0.0
 clone git github.com/mattn/go-sqlite3 v1.1.0
-clone git github.com/tchap/go-patricia v2.2.5
+clone git github.com/tchap/go-patricia v2.2.6
 clone git github.com/vdemeester/shakers 24d7f1d6a71aa5d9cbe7390e4afb66b7eef9e1b3
 # forked golang.org/x/net package includes a patch for lazy loading trace templates
 clone git golang.org/x/net 2beffdc2e92c8a3027590f898fe88f69af48a3f8 https://github.com/tonistiigi/net.git
@@ -61,12 +61,12 @@ clone git golang.org/x/sys eb2c74142fd19a79b3f237334c7384d5167b1b46 https://gith
 clone git github.com/docker/go-units eb879ae3e2b84e2a142af415b679ddeda47ec71c
 clone git github.com/docker/go-connections fa2850ff103453a9ad190da0df0af134f0314b3d
 
-clone git github.com/docker/engine-api 603ec41824c63d1e6498a22271987fa1f268c0c0
+clone git github.com/docker/engine-api ebc51d1954fc8934307dd15841b8d64f7cd505df
 clone git github.com/RackSec/srslog 259aed10dfa74ea2961eddd1d9847619f6e98837
 clone git github.com/imdario/mergo 0.2.1
 
 #get libnetwork packages
-clone git github.com/docker/libnetwork 24f64a6f9e9cade70e3904df291fb321584b1b4e
+clone git github.com/docker/libnetwork 82fb373e3eaa4e9bbb5b5ac148b0a3a71f80fca6
 clone git github.com/docker/go-events afb2b9f2c23f33ada1a22b03651775fdc65a5089
 clone git github.com/armon/go-radix e39d623f12e8e41c7b5529e9a9dd67a1e2261f80
 clone git github.com/armon/go-metrics eb0af217e5e9747e41dd5303755356b62d28e3ec
@@ -87,7 +87,7 @@ clone git github.com/boltdb/bolt v1.2.1
 clone git github.com/miekg/dns 75e6e86cc601825c5dbcd4e0c209eab180997cd7
 
 # get graph and distribution packages
-clone git github.com/docker/distribution 07f32ac1831ed0fc71960b7da5d6bb83cb6881b5
+clone git github.com/docker/distribution 77b9d2997abcded79a5314970fe69a44c93c25fb
 clone git github.com/vbatts/tar-split v0.9.11
 
 # get go-zfs packages
@@ -103,7 +103,7 @@ clone git github.com/docker/go v1.5.1-1-1-gbaf439e
 clone git github.com/agl/ed25519 d2b94fd789ea21d12fac1a4443dd3a3f79cda72c
 
 clone git github.com/opencontainers/runc cc29e3dded8e27ba8f65738f40d251c885030a28 # libcontainer
-clone git github.com/opencontainers/specs v1.0.0-rc1 # specs
+clone git github.com/opencontainers/runtime-spec v1.0.0-rc1 # specs
 clone git github.com/seccomp/libseccomp-golang 32f571b70023028bd57d9288c20efbcb237f3ce0
 # libcontainer deps (see src/github.com/opencontainers/runc/Godeps/Godeps.json)
 clone git github.com/coreos/go-systemd v4
@@ -145,6 +145,7 @@ clone git github.com/gogo/protobuf 43a2e0b1c32252bfbbdf81f7faa7a88fb3fa4028
 clone git github.com/cloudflare/cfssl b895b0549c0ff676f92cf09ba971ae02bb41367b
 clone git github.com/google/certificate-transparency 025a5cab06f6a819c455d9fdc9e2a1b6d0982284
 clone git golang.org/x/crypto 3fbbcd23f1cb824e69491a5930cfeff09b12f4d2 https://github.com/golang/crypto.git
+clone git golang.org/x/time a4bde12657593d5e90d0533a3e4fd95e635124cb https://github.com/golang/time.git
 clone git github.com/mreiferson/go-httpclient 63fe23f7434723dc904c901043af07931f293c47
 clone git github.com/hashicorp/go-memdb 98f52f52d7a476958fa9da671354d270c50661a7
 clone git github.com/hashicorp/go-immutable-radix 8e8ed81f8f0bf1bdd829593fdd5c29922c1ea990

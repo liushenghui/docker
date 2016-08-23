@@ -38,7 +38,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/opencontainers/runc/libcontainer/label"
 	"github.com/opencontainers/runc/libcontainer/user"
-	"github.com/opencontainers/specs/specs-go"
+	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 const (
@@ -487,10 +487,10 @@ func verifyPlatformContainerSettings(daemon *Daemon, hostConfig *containertypes.
 		if hostConfig.Privileged {
 			return warnings, fmt.Errorf("Privileged mode is incompatible with user namespaces")
 		}
-		if hostConfig.NetworkMode.IsHost() {
+		if hostConfig.NetworkMode.IsHost() && !hostConfig.UsernsMode.IsHost() {
 			return warnings, fmt.Errorf("Cannot share the host's network namespace when user namespaces are enabled")
 		}
-		if hostConfig.PidMode.IsHost() {
+		if hostConfig.PidMode.IsHost() && !hostConfig.UsernsMode.IsHost() {
 			return warnings, fmt.Errorf("Cannot share the host PID namespace when user namespaces are enabled")
 		}
 		if hostConfig.ReadonlyRootfs {

@@ -17,7 +17,7 @@ import (
 	"github.com/docker/docker/restartmanager"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
-	"github.com/opencontainers/specs/specs-go"
+	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 func (pm *Manager) enable(p *plugin, force bool) error {
@@ -90,7 +90,13 @@ func (pm *Manager) initSpec(p *plugin) (*specs.Spec, error) {
 		if mount.Source != nil {
 			m.Source = *mount.Source
 		}
+
 		if m.Source != "" && m.Type == "bind" {
+			/* Debugging issue #25511: Volumes and other content created under the
+			bind mount should be recursively propagated. rshared, not shared.
+			This could be the reason for EBUSY during removal. Override options
+			with rbind, rshared and see if CI errors are fixed. */
+			m.Options = []string{"rbind", "rshared"}
 			fi, err := os.Lstat(filepath.Join(rootfs, string(os.PathSeparator), m.Destination)) // TODO: followsymlinks
 			if err != nil {
 				return nil, err
@@ -143,10 +149,12 @@ func (pm *Manager) disable(p *plugin) error {
 
 // Shutdown stops all plugins and called during daemon shutdown.
 func (pm *Manager) Shutdown() {
+	pm.Lock()
+	pm.shutdown = true
+	pm.Unlock()
+
 	pm.RLock()
 	defer pm.RUnlock()
-
-	pm.shutdown = true
 	for _, p := range pm.plugins {
 		if pm.liveRestore && p.PluginObj.Active {
 			logrus.Debug("Plugin active when liveRestore is set, skipping shutdown")
@@ -173,7 +181,6 @@ func (pm *Manager) Shutdown() {
 					}
 				}
 			}
-			close(p.exitChan)
 		}
 		if err := os.RemoveAll(p.runtimeSourcePath); err != nil {
 			logrus.Errorf("Remove plugin runtime failed with error: %v", err)

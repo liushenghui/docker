@@ -25,7 +25,7 @@ import (
 	"github.com/opencontainers/runc/libcontainer/configs"
 	"github.com/opencontainers/runc/libcontainer/devices"
 	"github.com/opencontainers/runc/libcontainer/label"
-	"github.com/opencontainers/specs/specs-go"
+	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 func u32Ptr(i int64) *uint32     { u := uint32(i); return &u }
@@ -382,4 +382,8 @@ func isLinkable(child *container.Container) bool {
 
 func errRemovalContainer(containerID string) error {
 	return fmt.Errorf("Container %s is marked for removal and cannot be connected or disconnected to the network", containerID)
+}
+
+func enableIPOnPredefinedNetwork() bool {
+	return false
 }

@@ -9,7 +9,7 @@
 # docker run -v `pwd`:/go/src/github.com/docker/docker --privileged -i -t docker bash
 #
 # # Run the test suite:
-# docker run --privileged docker hack/make.sh test
+# docker run --privileged docker hack/make.sh test-unit test-integration-cli test-docker-py
 #
 # # Publish a release:
 # docker run --privileged \
@@ -120,7 +120,7 @@ RUN set -x \
 # IMPORTANT: If the version of Go is updated, the Windows to Linux CI machines
 #            will need updating, to avoid errors. Ping #docker-maintainers on IRC
 #            with a heads-up.
-ENV GO_VERSION 1.6.3
+ENV GO_VERSION 1.7
 RUN curl -fsSL "https://storage.googleapis.com/golang/go${GO_VERSION}.linux-amd64.tar.gz" \
 	| tar -xzC /usr/local
 
@@ -182,7 +182,7 @@ RUN set -x \
 	&& rm -rf "$GOPATH"
 
 # Get the "docker-py" source so we can run their integration tests
-ENV DOCKER_PY_COMMIT 7befe694bd21e3c54bb1d7825270ea4bd6864c13
+ENV DOCKER_PY_COMMIT e2655f658408f9ad1f62abdef3eb6ed43c0cf324
 RUN git clone https://github.com/docker/docker-py.git /docker-py \
 	&& cd /docker-py \
 	&& git checkout -q $DOCKER_PY_COMMIT \

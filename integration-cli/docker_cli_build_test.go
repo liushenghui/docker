@@ -438,72 +438,6 @@ func (s *DockerSuite) TestBuildEnvOverwrite(c *check.C) {
 
 }
 
-func (s *DockerSuite) TestBuildOnBuildForbiddenMaintainerInSourceImage(c *check.C) {
-	name := "testbuildonbuildforbiddenmaintainerinsourceimage"
-
-	out, _ := dockerCmd(c, "create", "busybox", "true")
-
-	cleanedContainerID := strings.TrimSpace(out)
-
-	dockerCmd(c, "commit", "--run", "{\"OnBuild\":[\"MAINTAINER docker.io\"]}", cleanedContainerID, "onbuild")
-
-	_, err := buildImage(name,
-		`FROM onbuild`,
-		true)
-	if err != nil {
-		if !strings.Contains(err.Error(), "maintainer isn't allowed as an ONBUILD trigger") {
-			c.Fatalf("Wrong error %v, must be about MAINTAINER and ONBUILD in source image", err)
-		}
-	} else {
-		c.Fatal("Error must not be nil")
-	}
-
-}
-
-func (s *DockerSuite) TestBuildOnBuildForbiddenFromInSourceImage(c *check.C) {
-	name := "testbuildonbuildforbiddenfrominsourceimage"
-
-	out, _ := dockerCmd(c, "create", "busybox", "true")
-
-	cleanedContainerID := strings.TrimSpace(out)
-
-	dockerCmd(c, "commit", "--run", "{\"OnBuild\":[\"FROM busybox\"]}", cleanedContainerID, "onbuild")
-
-	_, err := buildImage(name,
-		`FROM onbuild`,
-		true)
-	if err != nil {
-		if !strings.Contains(err.Error(), "from isn't allowed as an ONBUILD trigger") {
-			c.Fatalf("Wrong error %v, must be about FROM and ONBUILD in source image", err)
-		}
-	} else {
-		c.Fatal("Error must not be nil")
-	}
-
-}
-
-func (s *DockerSuite) TestBuildOnBuildForbiddenChainedInSourceImage(c *check.C) {
-	name := "testbuildonbuildforbiddenchainedinsourceimage"
-
-	out, _ := dockerCmd(c, "create", "busybox", "true")
-
-	cleanedContainerID := strings.TrimSpace(out)
-
-	dockerCmd(c, "commit", "--run", "{\"OnBuild\":[\"ONBUILD RUN ls\"]}", cleanedContainerID, "onbuild")
-
-	_, err := buildImage(name,
-		`FROM onbuild`,
-		true)
-	if err != nil {
-		if !strings.Contains(err.Error(), "Chaining ONBUILD via `ONBUILD ONBUILD` isn't allowed") {
-			c.Fatalf("Wrong error %v, must be about chaining ONBUILD in source image", err)
-		}
-	} else {
-		c.Fatal("Error must not be nil")
-	}
-
-}
-
 func (s *DockerSuite) TestBuildOnBuildCmdEntrypointJSON(c *check.C) {
 	name1 := "onbuildcmd"
 	name2 := "onbuildgenerated"
@@ -5417,7 +5351,7 @@ func (s *DockerSuite) TestBuildNoDupOutput(c *check.C) {
 		c.Fatalf("Build should have worked: %q", err)
 	}
 
-	exp := "\nStep 2 : RUN env\n"
+	exp := "\nStep 2/2 : RUN env\n"
 	if !strings.Contains(out, exp) {
 		c.Fatalf("Bad output\nGot:%s\n\nExpected to contain:%s\n", out, exp)
 	}
@@ -5434,7 +5368,7 @@ func (s *DockerSuite) TestBuildStartsFromOne(c *check.C) {
 		c.Fatalf("Build should have worked: %q", err)
 	}
 
-	exp := "\nStep 1 : FROM busybox\n"
+	exp := "\nStep 1/1 : FROM busybox\n"
 	if !strings.Contains(out, exp) {
 		c.Fatalf("Bad output\nGot:%s\n\nExpected to contain:%s\n", out, exp)
 	}
@@ -6979,5 +6913,18 @@ func (s *DockerSuite) TestBuildCmdShellArgsEscaped(c *check.C) {
 
 	if res != `["cmd","/S","/C","\"ipconfig\""]` {
 		c.Fatalf("CMD was not escaped Config.Cmd: got %v", res)
+	}
+}
+
+// Test case for #24912.
+func (s *DockerSuite) TestBuildStepsWithProgress(c *check.C) {
+	name := "testbuildstepswithprogress"
+
+	totalRun := 5
+	_, out, err := buildImageWithOut(name, "FROM busybox\n"+strings.Repeat("RUN echo foo\n", totalRun), true)
+	c.Assert(err, checker.IsNil)
+	c.Assert(out, checker.Contains, fmt.Sprintf("Step 1/%d : FROM busybox", 1+totalRun))
+	for i := 2; i <= 1+totalRun; i++ {
+		c.Assert(out, checker.Contains, fmt.Sprintf("Step %d/%d : RUN echo foo", i, 1+totalRun))
 	}
 }

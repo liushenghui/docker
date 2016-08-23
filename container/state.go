@@ -86,6 +86,10 @@ func (s *State) StateString() string {
 		return "running"
 	}
 
+	if s.RemovalInProgress {
+		return "removing"
+	}
+
 	if s.Dead {
 		return "dead"
 	}
@@ -101,6 +105,7 @@ func (s *State) StateString() string {
 func IsValidStateString(s string) bool {
 	if s != "paused" &&
 		s != "restarting" &&
+		s != "removing" &&
 		s != "running" &&
 		s != "dead" &&
 		s != "created" &&
@@ -205,7 +210,6 @@ func (s *State) SetExitCode(ec int) {
 func (s *State) SetRunning(pid int, initial bool) {
 	s.error = ""
 	s.Running = true
-	s.Paused = false
 	s.Restarting = false
 	s.exitCode = 0
 	s.Pid = pid
